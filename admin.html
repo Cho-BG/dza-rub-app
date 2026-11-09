@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>DZA·RUB Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css">
+<style>
+.hidden{display:none!important}
+.loading{min-height:60vh;display:grid;place-items:center;color:var(--text-3)}
+.links a{display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--line);text-decoration:none;color:var(--text);font-size:15px;word-break:break-all}
+.links a:first-child{border-top:0}
+.links a:hover{color:var(--brand)}
+.links .ic{color:var(--text-3)}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login" class="login hidden"><div class="card"><div class="card-b" style="padding:32px">
+  <div class="logo" style="width:44px;height:44px;border-radius:11px" data-icon="exchange:22"></div>
+  <h1>DZA · RUB Admin</h1><p class="sub">We email you a one-time sign-in link. No password needed.</p>
+  <div class="err hidden" id="login-err" role="alert"></div>
+  <div class="alert hidden" id="login-ok" role="status"><span data-icon="mail:16"></span> <span>Check your email and tap the sign-in link.</span></div>
+  <form id="login-form">
+    <div class="field"><label for="em">Admin email</label><input id="em" type="email" autocomplete="email" required></div>
+    <button class="btn btn-primary" style="width:100%" id="login-btn"><span data-icon="mail:16"></span> Email me a sign-in link</button>
+  </form>
+</div></div></div>
+
+<!-- DASHBOARD -->
+<div id="app" class="hidden">
+<header class="top"><div class="wrap">
+  <div class="brand"><div class="logo" data-icon="exchange:18"></div><div>DZA · RUB<small>Exchange admin</small></div></div>
+  <nav class="actions" aria-label="Account">
+    <button class="btn btn-ghost" id="csv" aria-label="Export CSV"><span data-icon="download:17"></span><span class="lbl-hide">Export CSV</span></button>
+    <button class="btn btn-ghost" id="logout" aria-label="Log out"><span data-icon="logout:17"></span><span class="lbl-hide">Log out</span></button>
+  </nav>
+</div></header>
+
+<main class="wrap">
+<div class="grid">
+  <div class="stack">
+    <section class="card rate" aria-labelledby="rate-h">
+      <div class="rate-bg" data-icon="exchange:180"></div>
+      <div class="card-b">
+        <div class="eyebrow" id="rate-h">Buyers see this price</div>
+        <div id="rate-view"></div>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="upd-h">
+      <div class="card-h"><h2 id="upd-h">Update price</h2></div>
+      <div class="card-b">
+        <div class="alert hidden" id="saved" role="status"><span data-icon="check:16"></span> Saved. The bot shows the new price right away.</div>
+        <form id="price-form">
+          <div class="field"><label for="price">Price for 1 RUB</label>
+            <div class="input-unit"><input id="price" class="num" required inputmode="decimal" placeholder="2.85" autocomplete="off"><span>DZD</span></div></div>
+          <div class="field"><label for="note">Note under the price <span style="color:var(--text-3);font-weight:400">(optional)</span></label>
+            <input id="note" placeholder="Minimum 10 000 RUB"></div>
+          <div class="field"><label for="ci">"Contact us" text</label>
+            <textarea id="ci" rows="2" placeholder="WhatsApp: +213 …"></textarea>
+            <div class="help">Shown when a client taps Contact us in the bot.</div></div>
+          <button class="btn btn-primary" id="save-btn"><span data-icon="check:16"></span> Save changes</button>
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <div class="stack">
+    <section class="card" aria-labelledby="ov-h">
+      <div class="card-h"><h2 id="ov-h">Overview</h2><span class="eyebrow">All time</span></div>
+      <div class="stats-wrap"><div class="stats">
+        <div class="stat hl"><div class="k"><span data-icon="bell:15"></span> New</div><div class="v num" id="c-new">–</div></div>
+        <div class="stat"><div class="k"><span data-icon="down:15"></span> Buy requests</div><div class="v num" id="c-buy">–</div></div>
+        <div class="stat"><div class="k"><span data-icon="up:15"></span> Sell requests</div><div class="v num" id="c-sell">–</div></div>
+        <div class="stat"><div class="k"><span data-icon="users:15"></span> Total</div><div class="v num" id="c-total">–</div></div>
+      </div></div>
+      <div class="info"><span data-icon="send:16"></span><span>Every new application is also sent to you on Telegram. This page refreshes every minute.</span></div>
+    </section>
+    <section class="card" aria-labelledby="ln-h">
+      <div class="card-h"><h2 id="ln-h">Links</h2></div>
+      <div class="card-b links" id="links"></div>
+    </section>
+  </div>
+</div>
+
+<section class="card" aria-labelledby="apps-h">
+  <div class="card-h" style="flex-wrap:wrap">
+    <h2 id="apps-h">Applications</h2>
+    <div class="filters">
+      <nav class="seg" aria-label="Filter by type" id="f-kind"></nav>
+      <nav class="seg" aria-label="Filter by status" id="f-status"></nav>
+    </div>
+  </div>
+  <div class="table" role="table" aria-label="Applications" id="table"></div>
+</section>
+</main>
+</div>
+
+<div id="boot" class="loading">Loading…</div>
+
+<script>
+const ICONS = {
+  exchange:'<path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/>',
+  phone:'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>',
+  mail:'<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+  send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+  logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>',
+  trash:'<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+  down:'<path d="M17 7 7 17"/><path d="M17 17H7V7"/>', up:'<path d="M7 7h10v10"/><path d="M7 17 17 7"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>', lock:'<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  inbox:'<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  link:'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+};
+const icon = (n, s=18) => `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => { const [i,d]=Number(n).toFixed(2).split("."); const dd=d.replace(/0+$/,""); return i.replace(/\B(?=(\d{3})+(?!\d))/g," ")+(dd?"."+dd:""); };
+const $ = s => document.querySelector(s);
+function paintIcons(root=document){ root.querySelectorAll("[data-icon]").forEach(el=>{ const [n,s]=el.dataset.icon.split(":"); el.innerHTML=icon(n,+s||18); el.removeAttribute("data-icon"); }); }
+paintIcons();
+
+const STATUSES = ["new","contacted","done","cancelled"];
+const LABEL = {new:"New",contacted:"Contacted",done:"Done",cancelled:"Cancelled"};
+const LANG = {fr:"FR",ar:"AR",en:"EN"};
+const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+let apps = [], settings = {}, fKind = null, fStatus = null;
+
+function nowAlgiers(){
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Algiers",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false}).formatToParts(new Date()).map(x=>[x.type,x.value]));
+  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;
+}
+function show(id){ ["login","app","boot"].forEach(x=>$("#"+x).classList.toggle("hidden",x!==id)); }
+
+// ---------- auth ----------
+async function start(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(!session) return show("login");
+  const { data: ok } = await sb.rpc("is_admin");
+  if(!ok){ await sb.auth.signOut(); loginError("This email is not an admin."); return show("login"); }
+  if(started) return; started = true;
+  history.replaceState(null, "", location.pathname);
+  show("app"); await loadAll(); setInterval(()=>{ const a=document.activeElement; if(!a||!/INPUT|TEXTAREA|SELECT/.test(a.tagName)) loadAll(); }, 60000);
+}
+function loginError(msg){ const e=$("#login-err"); e.textContent=msg; e.classList.toggle("hidden",!msg); }
+let started = false;
+sb.auth.onAuthStateChange((event)=>{ if(event==="SIGNED_IN") start(); });
+$("#login-form").addEventListener("submit", async e=>{
+  e.preventDefault(); loginError(""); $("#login-btn").disabled=true;
+  const { error } = await sb.auth.signInWithOtp({ email:$("#em").value.trim(),
+    options:{ emailRedirectTo: location.origin + location.pathname } });
+  $("#login-btn").disabled=false;
+  if(error) return loginError(/rate/i.test(error.message) ? "Too many emails. Wait a few minutes and try again." : "Could not send the email: " + error.message);
+  $("#login-ok").classList.remove("hidden"); $("#login-form").classList.add("hidden");
+});
+$("#logout").onclick = async ()=>{ await sb.auth.signOut(); location.reload(); };
+
+// ---------- data ----------
+async function loadAll(){
+  const [s, a] = await Promise.all([
+    sb.from("settings").select("key,value"),
+    sb.from("applications").select("*").order("id",{ascending:false}).limit(1000),
+  ]);
+  if(s.error||a.error){ console.error(s.error||a.error); return; }
+  settings = Object.fromEntries(s.data.map(r=>[r.key,r.value])); apps = a.data;
+  renderPrice(); renderStats(); renderFilters(); renderTable(); renderLinks();
+}
+
+function renderPrice(){
+  const p = parseFloat(settings.buy_price);
+  $("#rate-view").innerHTML = p>0 ? `
+    <div class="rate-main"><span class="unit">1 RUB =</span><span class="num">${fmt(p)}</span><span class="unit">DZD</span></div>
+    <div class="rate-sub"><span>1 000 RUB = <b class="num">${fmt(p*1000)} DZD</b></span>
+      <span style="display:inline-flex;gap:6px;align-items:center">${icon("clock",14)} ${esc(settings.price_updated||"—")}</span></div>
+    ${settings.price_note?`<div class="rate-note">${esc(settings.price_note)}</div>`:""}`
+    : `<div class="rate-empty">No price set yet</div><div class="rate-sub">Buyers are told the price is being updated.</div>`;
+  if(document.activeElement?.closest?.("#price-form")) return;
+  $("#price").value = settings.buy_price||""; $("#note").value = settings.price_note||""; $("#ci").value = settings.contact_info||"";
+}
+
+function renderStats(){
+  $("#c-new").textContent = apps.filter(a=>a.status==="new").length;
+  $("#c-buy").textContent = apps.filter(a=>a.kind==="buy").length;
+  $("#c-sell").textContent = apps.filter(a=>a.kind==="sell").length;
+  $("#c-total").textContent = apps.length;
+}
+
+function renderLinks(){
+  const mini = location.href.replace(/admin\.html.*$/,"");
+  $("#links").innerHTML = `
+    <a href="${esc(mini)}" target="_blank" rel="noopener">${icon("link",16)} Mini App: ${esc(mini)}</a>
+    <a href="https://supabase.com/dashboard" target="_blank" rel="noopener">${icon("link",16)} Supabase dashboard</a>`;
+}
+
+function renderFilters(){
+  $("#f-kind").innerHTML = [[null,"All"],["buy","Buy"],["sell","Sell"]].map(([k,l])=>`<a href="#" data-k="${k??""}" ${fKind===k?'aria-current="page"':""}>${l}</a>`).join("");
+  $("#f-status").innerHTML = [null,...STATUSES].map(s=>`<a href="#" data-s="${s??""}" ${fStatus===s?'aria-current="page"':""}>${s?LABEL[s]:"Any status"}</a>`).join("");
+  $("#f-kind").querySelectorAll("a").forEach(a=>a.onclick=e=>{e.preventDefault();fKind=a.dataset.k||null;renderFilters();renderTable();});
+  $("#f-status").querySelectorAll("a").forEach(a=>a.onclick=e=>{e.preventDefault();fStatus=a.dataset.s||null;renderFilters();renderTable();});
+}
+
+function renderTable(){
+  const rows = apps.filter(a=>(!fKind||a.kind===fKind)&&(!fStatus||a.status===fStatus));
+  if(!rows.length){ $("#table").innerHTML = `<div class="empty">${icon("inbox",40)}<b>No applications here yet</b>When clients apply in the bot, they appear here.</div>`; return; }
+  const badge = k => `<span class="badge b-${k}">${icon(k==="buy"?"down":"up",13)}${k==="buy"?"Buy":"Sell"}</span>`;
+  $("#table").innerHTML = `<div class="tr thead" role="row"><div role="columnheader">#</div><div role="columnheader">Type</div><div role="columnheader">Client</div>
+     <div role="columnheader">Contact</div><div role="columnheader">Amount</div><div role="columnheader">Status &amp; note</div></div>` +
+  rows.map(a=>`
+   <div class="tr" role="row">
+    <div class="c-id" role="cell"><span class="id num">#${a.id}</span><span class="m-type">${badge(a.kind)}</span></div>
+    <div class="c-type" role="cell">${badge(a.kind)}</div>
+    <div class="c-client client" role="cell">
+      <div class="name">${esc(a.tg_name||"Client")}</div>
+      <div class="meta">${a.tg_username?`<a href="https://t.me/${esc(a.tg_username)}" target="_blank" rel="noopener" style="color:var(--brand);text-decoration:none">@${esc(a.tg_username)}</a>`:""}
+        ${a.lang?`<span class="badge b-lang" style="height:22px;font-size:12px">${esc(LANG[a.lang]||a.lang)}</span>`:""}
+        ${a.source==="app"?`<span class="badge b-lang" style="height:22px;font-size:12px">App</span>`:""}</div>
+      <div class="meta">${icon("clock",13)} ${esc(new Date(a.created_at).toLocaleString("en-GB",{timeZone:"Africa/Algiers",dateStyle:"short",timeStyle:"short"}))}</div>
+    </div>
+    <div class="c-contact contact" role="cell">
+      <a href="tel:${esc(a.phone)}" class="num">${icon("phone",15)}${esc(a.phone)}</a>
+      <a href="mailto:${esc(a.email)}">${icon("mail",15)}${esc(a.email)}</a>
+    </div>
+    <div class="c-amount amount" role="cell">
+      <div class="num">${esc(a.amount)} <span style="font-weight:500;color:var(--text-3);font-size:13px">RUB</span></div>
+      ${a.price_seen?`<div class="meta">at <span class="num">${esc(a.price_seen)}</span> DZD</div>`:""}
+    </div>
+    <div class="c-manage" role="cell">
+     <form class="manage" data-id="${a.id}">
+      <label class="sr" for="st${a.id}">Status for #${a.id}</label>
+      <select id="st${a.id}" class="s-${a.status}" name="status">${STATUSES.map(s=>`<option value="${s}" ${s===a.status?"selected":""}>${LABEL[s]}</option>`).join("")}</select>
+      <label class="sr" for="nt${a.id}">Note for #${a.id}</label>
+      <input id="nt${a.id}" name="note" value="${esc(a.note)}" placeholder="Add a note…">
+      <button class="btn btn-ghost btn-icon" aria-label="Save note for #${a.id}" title="Save">${icon("check",17)}</button>
+      <button type="button" class="btn btn-danger btn-icon del" aria-label="Delete #${a.id}" title="Delete">${icon("trash",17)}</button>
+     </form>
+    </div>
+   </div>`).join("");
+  $("#table").querySelectorAll("form.manage").forEach(f=>{
+    const id = +f.dataset.id;
+    f.status.onchange = ()=>update(id,{status:f.status.value});
+    f.onsubmit = e=>{e.preventDefault(); update(id,{note:f.note.value, status:f.status.value});};
+    f.querySelector(".del").onclick = async ()=>{
+      if(!confirm(`Delete application #${id}? This cannot be undone.`)) return;
+      const {error} = await sb.from("applications").delete().eq("id",id); if(error) return alert(error.message); loadAll();
+    };
+  });
+}
+
+async function update(id, patch){
+  const {error} = await sb.from("applications").update(patch).eq("id",id);
+  if(error) return alert(error.message);
+  loadAll();
+}
+
+$("#price-form").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const price = $("#price").value.trim().replace(",",".");
+  if(!(parseFloat(price)>0)) return $("#price").focus();
+  $("#save-btn").disabled = true;
+  const rows = {buy_price:price, price_note:$("#note").value.trim(), contact_info:$("#ci").value.trim(), price_updated:nowAlgiers()};
+  const results = await Promise.all(Object.entries(rows).map(([key,value])=>sb.from("settings").update({value}).eq("key",key)));
+  $("#save-btn").disabled = false;
+  const err = results.find(r=>r.error); if(err) return alert(err.error.message);
+  $("#saved").classList.remove("hidden"); setTimeout(()=>$("#saved").classList.add("hidden"),4000);
+  document.activeElement.blur(); loadAll();
+});
+
+$("#csv").onclick = ()=>{
+  if(!apps.length) return;
+  const cols = Object.keys(apps[0]);
+  const q = v => `"${String(v??"").replace(/"/g,'""')}"`;
+  const csv = "﻿" + [cols.join(","), ...apps.map(a=>cols.map(c=>q(a[c])).join(","))].join("\n");
+  const url = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  Object.assign(document.createElement("a"),{href:url,download:"applications.csv"}).click();
+  URL.revokeObjectURL(url);
+};
+
+start();
+</script>
+</body>
+</html>
