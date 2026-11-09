@@ -17,6 +17,8 @@
 <link rel="stylesheet" href="admin.css">
 <style>
 .hidden{display:none!important}
+html.desktop .web-only{display:none!important}
+html:not(.desktop) .desktop-only{display:none!important}
 .loading{min-height:60vh;display:grid;place-items:center;color:var(--text-3)}
 .links a{display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--line);text-decoration:none;color:var(--text);font-size:15px;word-break:break-all}
 .links a:first-child{border-top:0}
@@ -31,12 +33,17 @@
 <!-- LOGIN -->
 <div id="login" class="login hidden"><div class="card"><div class="card-b" style="padding:32px">
   <div class="logo" style="width:44px;height:44px;border-radius:11px" data-icon="exchange:22"></div>
-  <h1>DZA · RUB Admin</h1><p class="sub" id="login-sub">We email you a one-time sign-in link. No password needed.</p>
+  <h1>DZA · RUB Admin</h1><p class="sub" id="login-sub">Sign in to manage prices and client applications.</p>
   <div class="err hidden" id="login-err" role="alert"></div>
-  <form id="login-form">
-    <div class="field"><label for="em">Admin email</label><input id="em" type="email" autocomplete="email" required></div>
-    <button class="btn btn-primary" style="width:100%" id="login-btn"><span data-icon="mail:16"></span> Email me a sign-in link</button>
+  <form id="pw-form">
+    <div class="field"><label for="em">Admin email</label><input id="em" type="email" autocomplete="username" required></div>
+    <div class="field"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" required minlength="8"></div>
+    <button class="btn btn-primary" style="width:100%" id="pw-btn"><span data-icon="lock:16"></span> Sign in</button>
   </form>
+  <form id="login-form" class="web-only" style="margin-top:12px">
+    <button class="btn btn-ghost" style="width:100%" id="login-btn"><span data-icon="mail:16"></span> No password yet? Email me a sign-in link</button>
+  </form>
+  <p class="help desktop-only" style="text-align:center;margin-top:14px">No password yet? Sign in once on the website<br>(cho-bg.github.io/dza-rub-app/admin.html) and set it under <b>App password</b>.</p>
   <div id="wait" class="hidden">
     <div class="alert" role="status" style="align-items:flex-start"><span data-icon="mail:16"></span>
       <span>Open the email from Supabase and tap <b>Sign in</b>.<br>This window signs in by itself as soon as you do.</span></div>
@@ -97,6 +104,19 @@
     <section class="card" aria-labelledby="ln-h">
       <div class="card-h"><h2 id="ln-h">Links</h2></div>
       <div class="card-b links" id="links"></div>
+    </section>
+    <section class="card" aria-labelledby="pw-h">
+      <div class="card-h"><h2 id="pw-h">App password</h2></div>
+      <div class="card-b">
+        <div class="alert hidden" id="pw-saved" role="status"><span data-icon="check:16"></span> Password saved. Use it to sign in to the desktop app.</div>
+        <div class="err hidden" id="pw-err" role="alert"></div>
+        <form id="setpw-form">
+          <div class="field"><label for="np1">New password</label><input id="np1" type="password" autocomplete="new-password" minlength="8" required></div>
+          <div class="field"><label for="np2">Repeat password</label><input id="np2" type="password" autocomplete="new-password" minlength="8" required>
+            <div class="help">At least 8 characters. Used to sign in to the DZA-RUB Admin app on your computer.</div></div>
+          <button class="btn btn-primary" id="setpw-btn"><span data-icon="lock:16"></span> Save password</button>
+        </form>
+      </div>
     </section>
   </div>
 </div>
@@ -165,19 +185,43 @@ async function start(){
 function loginError(msg){ const e=$("#login-err"); e.textContent=msg; e.classList.toggle("hidden",!msg); }
 let started = false;
 sb.auth.onAuthStateChange((event)=>{ if(event==="SIGNED_IN") start(); });
+const IS_DESKTOP = /DZARUBAdmin/.test(navigator.userAgent);
+if(IS_DESKTOP) document.documentElement.classList.add("desktop");
 try{ const saved = localStorage.getItem("admin-email"); if(saved) $("#em").value = saved; }catch(e){}
+$("#pw-form").addEventListener("submit", async e=>{
+  e.preventDefault(); loginError(""); $("#pw-btn").disabled=true;
+  const email = $("#em").value.trim();
+  const { error } = await sb.auth.signInWithPassword({ email, password: $("#pw").value });
+  $("#pw-btn").disabled=false;
+  if(error){ await new Promise(r=>setTimeout(r,700)); return loginError("Wrong email or password." + (IS_DESKTOP ? "" : " No password yet? Use the email link below.")); }
+  try{ localStorage.setItem("admin-email", email); }catch(e){}
+  $("#pw").value=""; start();
+});
+$("#setpw-form").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const err = $("#pw-err"), ok = $("#pw-saved"); err.classList.add("hidden"); ok.classList.add("hidden");
+  const a = $("#np1").value, b = $("#np2").value;
+  if(a.length < 8){ err.textContent="Use at least 8 characters."; return err.classList.remove("hidden"); }
+  if(a !== b){ err.textContent="The two passwords are not the same."; return err.classList.remove("hidden"); }
+  $("#setpw-btn").disabled = true;
+  const { error } = await sb.auth.updateUser({ password: a });
+  $("#setpw-btn").disabled = false;
+  if(error){ err.textContent = "Could not save: " + error.message; return err.classList.remove("hidden"); }
+  $("#np1").value = $("#np2").value = ""; ok.classList.remove("hidden");
+});
 $("#login-form").addEventListener("submit", async e=>{
   e.preventDefault(); loginError(""); $("#login-btn").disabled=true;
   const email = $("#em").value.trim();
+  if(!email){ $("#login-btn").disabled=false; $("#em").focus(); return loginError("Type your email first."); }
   const { error } = await sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.origin + location.pathname } });
   $("#login-btn").disabled=false;
   if(error) return loginError(/rate|seconds/i.test(error.message) ? "Too many emails. Wait a minute and try again." : "Could not send the email: " + error.message);
   try{ localStorage.setItem("admin-email", email); }catch(e){}
   $("#login-sub").textContent = `We sent a sign-in link to ${email}.`;
-  $("#login-form").classList.add("hidden"); $("#wait").classList.remove("hidden");
+  $("#login-form").classList.add("hidden"); $("#pw-form").classList.add("hidden"); $("#wait").classList.remove("hidden");
 });
-$("#wait-back").onclick = ()=>{ $("#wait").classList.add("hidden"); $("#login-form").classList.remove("hidden");
-  $("#login-sub").textContent = "We email you a one-time sign-in link. No password needed."; };
+$("#wait-back").onclick = ()=>{ $("#wait").classList.add("hidden"); $("#login-form").classList.remove("hidden"); $("#pw-form").classList.remove("hidden");
+  $("#login-sub").textContent = "Sign in to manage prices and client applications."; };
 // Signed in from the email link in another window/tab (e.g. the browser)? Pick it up here too.
 window.addEventListener("storage", async ev=>{ if(!started && ev.key && ev.key.includes("auth-token") && ev.newValue) location.reload(); });
 window.addEventListener("focus", async ()=>{ if(!started){ const { data:{ session } } = await sb.auth.getSession(); if(session) start(); } });
