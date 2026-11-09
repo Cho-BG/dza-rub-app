@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
 <title>DZA·RUB Admin</title>
+<link rel="manifest" href="admin.webmanifest">
+<meta name="theme-color" content="#0B2545">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="DZA·RUB Admin">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="admin.css">
@@ -24,13 +31,17 @@
 <!-- LOGIN -->
 <div id="login" class="login hidden"><div class="card"><div class="card-b" style="padding:32px">
   <div class="logo" style="width:44px;height:44px;border-radius:11px" data-icon="exchange:22"></div>
-  <h1>DZA · RUB Admin</h1><p class="sub">We email you a one-time sign-in link. No password needed.</p>
+  <h1>DZA · RUB Admin</h1><p class="sub" id="login-sub">We email you a one-time sign-in link. No password needed.</p>
   <div class="err hidden" id="login-err" role="alert"></div>
-  <div class="alert hidden" id="login-ok" role="status"><span data-icon="mail:16"></span> <span>Check your email and tap the sign-in link.</span></div>
   <form id="login-form">
     <div class="field"><label for="em">Admin email</label><input id="em" type="email" autocomplete="email" required></div>
     <button class="btn btn-primary" style="width:100%" id="login-btn"><span data-icon="mail:16"></span> Email me a sign-in link</button>
   </form>
+  <div id="wait" class="hidden">
+    <div class="alert" role="status" style="align-items:flex-start"><span data-icon="mail:16"></span>
+      <span>Open the email from Supabase and tap <b>Sign in</b>.<br>This window signs in by itself as soon as you do.</span></div>
+    <button type="button" class="btn btn-ghost" style="width:100%" id="wait-back">Use another email / send again</button>
+  </div>
 </div></div></div>
 
 <!-- DASHBOARD -->
@@ -154,14 +165,23 @@ async function start(){
 function loginError(msg){ const e=$("#login-err"); e.textContent=msg; e.classList.toggle("hidden",!msg); }
 let started = false;
 sb.auth.onAuthStateChange((event)=>{ if(event==="SIGNED_IN") start(); });
+try{ const saved = localStorage.getItem("admin-email"); if(saved) $("#em").value = saved; }catch(e){}
 $("#login-form").addEventListener("submit", async e=>{
   e.preventDefault(); loginError(""); $("#login-btn").disabled=true;
-  const { error } = await sb.auth.signInWithOtp({ email:$("#em").value.trim(),
-    options:{ emailRedirectTo: location.origin + location.pathname } });
+  const email = $("#em").value.trim();
+  const { error } = await sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.origin + location.pathname } });
   $("#login-btn").disabled=false;
-  if(error) return loginError(/rate/i.test(error.message) ? "Too many emails. Wait a few minutes and try again." : "Could not send the email: " + error.message);
-  $("#login-ok").classList.remove("hidden"); $("#login-form").classList.add("hidden");
+  if(error) return loginError(/rate|seconds/i.test(error.message) ? "Too many emails. Wait a minute and try again." : "Could not send the email: " + error.message);
+  try{ localStorage.setItem("admin-email", email); }catch(e){}
+  $("#login-sub").textContent = `We sent a sign-in link to ${email}.`;
+  $("#login-form").classList.add("hidden"); $("#wait").classList.remove("hidden");
 });
+$("#wait-back").onclick = ()=>{ $("#wait").classList.add("hidden"); $("#login-form").classList.remove("hidden");
+  $("#login-sub").textContent = "We email you a one-time sign-in link. No password needed."; };
+// Signed in from the email link in another window/tab (e.g. the browser)? Pick it up here too.
+window.addEventListener("storage", async ev=>{ if(!started && ev.key && ev.key.includes("auth-token") && ev.newValue) location.reload(); });
+window.addEventListener("focus", async ()=>{ if(!started){ const { data:{ session } } = await sb.auth.getSession(); if(session) start(); } });
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 $("#logout").onclick = async ()=>{ await sb.auth.signOut(); location.reload(); };
 
 // ---------- data ----------
