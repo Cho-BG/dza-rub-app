@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://telegram.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://pkkeuehljypppacyfckb.supabase.co; base-uri 'none'; form-action 'self'; object-src 'none'">
 <title>Change RUB ⇄ DZD</title>
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -256,7 +258,7 @@ const T = {
       sell_title:"Vendre des RUB",sell_desc:"Nous vous contacterons avec une offre",amount:"Montant en RUB",you_pay:"Vous payez environ",
       phone:"Téléphone",email:"E-mail",submit:"Envoyer la demande",sending:"Envoi…",privacy:"Vos données servent uniquement à vous contacter.",
       err_amount:"Entrez un montant, ex. 50 000",err_phone:"Numéro invalide, ex. +213 555 12 34 56",err_email:"E-mail invalide, ex. nom@gmail.com",
-      err_server:"Une erreur est survenue. Réessayez.",err_tg:"Ouvrez cette application depuis Telegram.",
+      err_server:"Une erreur est survenue. Réessayez.",err_too_many:"Vous avez déjà envoyé plusieurs demandes. Nous vous contacterons très bientôt.",err_tg:"Ouvrez cette application depuis Telegram.",
       done_title:"Demande envoyée !",done_text:"Votre demande n°{id} a bien été reçue. Nous vous contacterons très bientôt.",done_btn:"Retour à l'accueil"},
   ar:{loading:"جارٍ التحميل…",tagline:"صرف سريع وموثوق",rate_label:"سعر الشراء لدينا",live:"مباشر",per1000:"1 000 RUB =",updated:"آخر تحديث",
       no_price:"يتم تحديث السعر الآن",buy:"شراء الروبل",buy_sub:"بالسعر المعروض",sell:"بيع الروبل",sell_sub:"احصل على عرض",
@@ -265,7 +267,7 @@ const T = {
       sell_title:"بيع الروبل",sell_desc:"سنتصل بك بعرض",amount:"المبلغ بالروبل",you_pay:"ستدفع تقريباً",
       phone:"رقم الهاتف",email:"البريد الإلكتروني",submit:"إرسال الطلب",sending:"جارٍ الإرسال…",privacy:"بياناتك تُستخدم فقط للتواصل معك.",
       err_amount:"أدخل المبلغ، مثال: 50 000",err_phone:"رقم غير صحيح، مثال: \u2066+213 555 12 34 56\u2069",err_email:"بريد غير صحيح، مثال: name@gmail.com",
-      err_server:"حدث خطأ. حاول مرة أخرى.",err_tg:"افتح هذا التطبيق من تيليغرام.",
+      err_server:"حدث خطأ. حاول مرة أخرى.",err_too_many:"لقد أرسلت عدة طلبات بالفعل. سنتصل بك قريباً جداً.",err_tg:"افتح هذا التطبيق من تيليغرام.",
       done_title:"تم إرسال الطلب!",done_text:"تم استلام طلبك رقم {id}. سنتصل بك قريباً جداً.",done_btn:"العودة إلى الرئيسية"},
   en:{loading:"Loading…",tagline:"Fast and reliable exchange",rate_label:"Our buying price",live:"Live",per1000:"1 000 RUB =",updated:"Updated",
       no_price:"Price is being updated",buy:"Buy RUB",buy_sub:"At the shown price",sell:"Sell RUB",sell_sub:"Get an offer",
@@ -274,7 +276,7 @@ const T = {
       sell_title:"Sell RUB",sell_desc:"We will contact you with an offer",amount:"Amount in RUB",you_pay:"You pay about",
       phone:"Phone",email:"Email",submit:"Send request",sending:"Sending…",privacy:"Your details are only used to contact you.",
       err_amount:"Enter an amount, e.g. 50 000",err_phone:"Invalid number, e.g. +213 555 12 34 56",err_email:"Invalid email, e.g. name@gmail.com",
-      err_server:"Something went wrong. Please try again.",err_tg:"Please open this app from Telegram.",
+      err_server:"Something went wrong. Please try again.",err_too_many:"You have already sent several requests. We will contact you very soon.",err_tg:"Please open this app from Telegram.",
       done_title:"Request sent!",done_text:"Your request #{id} has been received. We will contact you very soon.",done_btn:"Back to home"}
 };
 const ICONS={buy:'<svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7 7 17"/><path d="M17 17H7V7"/></svg>',
@@ -364,7 +366,7 @@ async function submit(){
     $("#done-text").textContent=t("done_text",{id:d.id});
     $("#apply").reset(); updateCalc();
     show("done");
-  }catch(e){ setErr("form",t("err_server")); haptic("error"); }
+  }catch(e){ setErr("form",t(e.message==="too_many"?"err_too_many":"err_server")); haptic("error"); }
   finally{ sending=false; $("#submit").disabled=false; $("#submit").textContent=t("submit"); if(tg){tg.MainButton.hideProgress(); updateMainButton();} }
 }
 

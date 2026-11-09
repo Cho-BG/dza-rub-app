@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://pkkeuehljypppacyfckb.supabase.co wss://pkkeuehljypppacyfckb.supabase.co; base-uri 'none'; form-action 'self'; object-src 'none'">
+<script>if (window.top !== window.self) { document.documentElement.style.display = "none"; window.top.location = window.self.location; }</script>
 <title>DZA·RUB Admin</title>
 <link rel="manifest" href="admin.webmanifest">
 <meta name="theme-color" content="#03505A">
@@ -29,7 +32,7 @@ html:not(.desktop) .desktop-only{display:none!important}
 .tg-link{color:#229ED9;font-weight:600;text-decoration:none}
 .tg-link:hover{text-decoration:underline}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug" crossorigin="anonymous"></script>
 <script src="config.js"></script>
 </head>
 <body>
@@ -351,7 +354,8 @@ $("#price-form").addEventListener("submit", async e=>{
 $("#csv").onclick = ()=>{
   if(!apps.length) return;
   const cols = Object.keys(apps[0]);
-  const q = v => `"${String(v??"").replace(/"/g,'""')}"`;
+  const q = v => { let t = String(v ?? ""); if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;   // stop Excel formula injection
+    return `"${t.replace(/"/g,'""')}"`; };
   const csv = "﻿" + [cols.join(","), ...apps.map(a=>cols.map(c=>q(a[c])).join(","))].join("\n");
   const url = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
   Object.assign(document.createElement("a"),{href:url,download:"applications.csv"}).click();
