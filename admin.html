@@ -25,6 +25,9 @@ html:not(.desktop) .desktop-only{display:none!important}
 .links a:first-child{border-top:0}
 .links a:hover{color:var(--brand)}
 .links .ic{color:var(--text-3)}
+.tg-line .ic{color:#229ED9}
+.tg-link{color:#229ED9;font-weight:600;text-decoration:none}
+.tg-link:hover{text-decoration:underline}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
@@ -285,7 +288,13 @@ function renderTable(){
     <div class="c-type" role="cell">${badge(a.kind)}</div>
     <div class="c-client client" role="cell">
       <div class="name">${esc(a.tg_name||"Client")}</div>
-      <div class="meta">${a.tg_username?`<a href="https://t.me/${esc(a.tg_username)}" target="_blank" rel="noopener" style="color:var(--brand);text-decoration:none">@${esc(a.tg_username)}</a>`:""}
+      <div class="meta tg-line">${icon("send",13)}
+        ${a.tg_username
+          ? `<a class="tg-link" href="https://t.me/${esc(a.tg_username)}" target="_blank" rel="noopener" title="Open chat in Telegram">@${esc(a.tg_username)}</a>`
+          : (a.tg_user_id ? `<a class="tg-link" href="tg://user?id=${esc(a.tg_user_id)}" title="Open chat in Telegram">Open in Telegram</a> <span style="color:var(--text-3)">(no @username)</span>` : `<span>—</span>`)}
+      </div>
+      ${a.tg_user_id?`<div class="meta">ID <span class="num">${esc(a.tg_user_id)}</span></div>`:""}
+      <div class="meta">
         ${a.lang?`<span class="badge b-lang" style="height:22px;font-size:12px">${esc(LANG[a.lang]||a.lang)}</span>`:""}
         ${a.source==="app"?`<span class="badge b-lang" style="height:22px;font-size:12px">App</span>`:""}</div>
       <div class="meta">${icon("clock",13)} ${esc(new Date(a.created_at).toLocaleString("en-GB",{timeZone:"Africa/Algiers",dateStyle:"short",timeStyle:"short"}))}</div>
