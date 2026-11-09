@@ -1,7 +1,7 @@
 // Tiny service worker for the installed admin app.
 // Pages are always loaded fresh from the network; a saved copy is only used when offline.
 // Data (Supabase) is never cached.
-const CACHE = "dza-rub-admin-v1";
+const CACHE = "dza-rub-admin-v2";
 const SHELL = ["admin.html", "admin.css", "config.js", "icons/icon-192.png"];
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

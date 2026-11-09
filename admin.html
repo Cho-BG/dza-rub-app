@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex">
 <title>DZA·RUB Admin</title>
 <link rel="manifest" href="admin.webmanifest">
-<meta name="theme-color" content="#0B2545">
+<meta name="theme-color" content="#03505A">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="admin.css">
 <style>
 .hidden{display:none!important}
+.logo-img{display:block;border-radius:22%;flex:none}
 html.desktop .web-only{display:none!important}
 html:not(.desktop) .desktop-only{display:none!important}
 .loading{min-height:60vh;display:grid;place-items:center;color:var(--text-3)}
@@ -32,7 +33,7 @@ html:not(.desktop) .desktop-only{display:none!important}
 
 <!-- LOGIN -->
 <div id="login" class="login hidden"><div class="card"><div class="card-b" style="padding:32px">
-  <div class="logo" style="width:44px;height:44px;border-radius:11px" data-icon="exchange:22"></div>
+  <img class="logo-img" src="icons/icon-192.png" alt="DZA-RUB" width="52" height="52">
   <h1>DZA · RUB Admin</h1><p class="sub" id="login-sub">Sign in to manage prices and client applications.</p>
   <div class="err hidden" id="login-err" role="alert"></div>
   <form id="pw-form">
@@ -54,7 +55,7 @@ html:not(.desktop) .desktop-only{display:none!important}
 <!-- DASHBOARD -->
 <div id="app" class="hidden">
 <header class="top"><div class="wrap">
-  <div class="brand"><div class="logo" data-icon="exchange:18"></div><div>DZA · RUB<small>Exchange admin</small></div></div>
+  <div class="brand"><img class="logo-img" src="icons/icon-192.png" alt="" width="36" height="36"><div>DZA · RUB<small>Exchange admin</small></div></div>
   <nav class="actions" aria-label="Account">
     <button class="btn btn-ghost" id="csv" aria-label="Export CSV"><span data-icon="download:17"></span><span class="lbl-hide">Export CSV</span></button>
     <button class="btn btn-ghost" id="logout" aria-label="Log out"><span data-icon="logout:17"></span><span class="lbl-hide">Log out</span></button>
